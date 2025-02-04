@@ -1,6 +1,6 @@
-# Bucket Indexing Sort Algorithm
+# Bucket Indexing Sort Algorithm (amish sorting)
 
-This repository contains an implementation of the **Bucket Indexing Sort Algorithm** in **C**. It is a novel approach to sorting based on indexing values directly into their respective "buckets."
+This repository contains an implementation of the **Bucket Indexing Sort Algorithm** **Amishsort** in **C**. It is a novel approach to sorting based on indexing values directly into their respective "buckets."
 
 ## Overview
 
