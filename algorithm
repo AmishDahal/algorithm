@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_SIZE 100000  // Adjust based on input size
+
+// Utility function to get the maximum absolute value in an array
+int getMax(int arr[], int n) {
+    int max = abs(arr[0]);
+    for (int i = 1; i < n; i++)
+        if (abs(arr[i]) > max)
+            max = abs(arr[i]);
+    return max;
+}
+
+// Counting Sort for a specific digit (LSD Radix Sort)
+void countingSort(int arr[], int n, int exp) {
+    int output[n];  
+    int count[10] = {0};  
+
+    // Count occurrences of each digit at the given place value (exp)
+    for (int i = 0; i < n; i++)
+        count[(abs(arr[i]) / exp) % 10]++;
+
+    // Convert count[] to be cumulative (stable sorting)
+    for (int i = 1; i < 10; i++)
+        count[i] += count[i - 1];
+
+    // Build the sorted array based on the current digit
+    for (int i = n - 1; i >= 0; i--) {
+        int digit = (abs(arr[i]) / exp) % 10;
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+
+    // Copy back sorted values
+    for (int i = 0; i < n; i++)
+        arr[i] = output[i];
+}
+
+// Radix Sort (Handles Large Numbers)
+void radixSort(int arr[], int n) {
+    int max = getMax(arr, n);
+
+    // Sort by each digit (Least Significant Digit first)
+    for (int exp = 1; max / exp > 0; exp *= 10)
+        countingSort(arr, n, exp);
+
+    // Now, handle negatives by reversing their order
+    int temp[n], index = 0;
+
+    // Place negative numbers first (in reversed order)
+    for (int i = n - 1; i >= 0; i--)
+        if (arr[i] < 0)
+            temp[index++] = arr[i];
+
+    // Then place positive numbers
+    for (int i = 0; i < n; i++)
+        if (arr[i] >= 0)
+            temp[index++] = arr[i];
+
+    // Copy back to original array
+    for (int i = 0; i < n; i++)
+        arr[i] = temp[i];
+}
+
+// Main function
+int main() {
+    int n;
+    printf("Enter the number of elements: ");
+    scanf("%d", &n);
+
+    int arr[n];
+    printf("Enter %d numbers (including large positives/negatives): ", n);
+    for (int i = 0; i < n; i++)
+        scanf("%d", &arr[i]);
+
+    // Perform Radix Sort
+    radixSort(arr, n);
+
+    // Print sorted array
+    printf("Sorted array: ");
+    for (int i = 0; i < n; i++)
+        printf("%d ", arr[i]);
+    printf("\n");
+
+    return 0;
+}
