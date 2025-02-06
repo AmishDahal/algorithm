@@ -1,175 +1,148 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <time.h>
 
-// Utility functions
-int getMax(int arr[], int n) {
-    int max = abs(arr[0]);
-    for (int i = 1; i < n; i++)
-        if (abs(arr[i]) > max)
-            max = abs(arr[i]);
-    return max;
+// Helper function to swap elements
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
 }
 
-// Counting Sort for Radix Sort (for digits)
-void countingSort(int arr[], int n, int exp) {
-    int *output = (int *)malloc(n * sizeof(int));  
-    int count[10] = {0};  
-
-    for (int i = 0; i < n; i++)
-        count[(abs(arr[i]) / exp) % 10]++;
-    
-    for (int i = 1; i < 10; i++)
-        count[i] += count[i - 1];
-    
-    for (int i = n - 1; i >= 0; i--) {
-        int digit = (abs(arr[i]) / exp) % 10;
-        output[count[digit] - 1] = arr[i];
-        count[digit]--;
-    }
-
-    for (int i = 0; i < n; i++)
-        arr[i] = output[i];
-
-    free(output);
-}
-
-// Radix Sort for integers with a small range
-void radixSort(int arr[], int n) {
-    int max = getMax(arr, n);
-
-    for (int exp = 1; max / exp > 0; exp *= 10)
-        countingSort(arr, n, exp);
-}
-
-// Quick Sort (with the possibility of switching to Merge Sort)
+// Quick Sort Algorithm
 void quickSort(int arr[], int low, int high) {
     if (low < high) {
         int pivot = arr[high];
         int i = (low - 1);
-        
+
         for (int j = low; j <= high - 1; j++) {
             if (arr[j] <= pivot) {
                 i++;
-                int temp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = temp;
+                swap(&arr[i], &arr[j]);
             }
         }
-        int temp = arr[i + 1];
-        arr[i + 1] = arr[high];
-        arr[high] = temp;
+        swap(&arr[i + 1], &arr[high]);
 
         int pi = i + 1;
-
         quickSort(arr, low, pi - 1);
         quickSort(arr, pi + 1, high);
     }
 }
 
-// Merge Sort for small arrays (when Quick Sort depth reaches a limit)
-void merge(int arr[], int l, int m, int r) {
-    int n1 = m - l + 1;
-    int n2 = r - m;
+// Insertion Sort for small subarrays
+void insertionSort(int arr[], int low, int high) {
+    for (int i = low + 1; i <= high; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= low && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
 
-    int *L = (int *)malloc(n1 * sizeof(int));
-    int *R = (int *)malloc(n2 * sizeof(int));
+// Merge Sort
+void merge(int arr[], int low, int mid, int high) {
+    int left_size = mid - low + 1;
+    int right_size = high - mid;
 
-    for (int i = 0; i < n1; i++)
-        L[i] = arr[l + i];
-    for (int i = 0; i < n2; i++)
-        R[i] = arr[m + 1 + i];
+    int* left = (int*)malloc(left_size * sizeof(int));
+    int* right = (int*)malloc(right_size * sizeof(int));
 
-    int i = 0, j = 0, k = l;
-    while (i < n1 && j < n2) {
-        if (L[i] <= R[j]) {
-            arr[k] = L[i];
+    for (int i = 0; i < left_size; i++)
+        left[i] = arr[low + i];
+
+    for (int i = 0; i < right_size; i++)
+        right[i] = arr[mid + 1 + i];
+
+    int i = 0, j = 0, k = low;
+    while (i < left_size && j < right_size) {
+        if (left[i] <= right[j]) {
+            arr[k] = left[i];
             i++;
         } else {
-            arr[k] = R[j];
+            arr[k] = right[j];
             j++;
         }
         k++;
     }
 
-    while (i < n1) {
-        arr[k] = L[i];
+    while (i < left_size) {
+        arr[k] = left[i];
         i++;
         k++;
     }
 
-    while (j < n2) {
-        arr[k] = R[j];
+    while (j < right_size) {
+        arr[k] = right[j];
         j++;
         k++;
     }
 
-    free(L);
-    free(R);
+    free(left);
+    free(right);
 }
 
-void mergeSort(int arr[], int l, int r) {
-    if (l < r) {
-        int m = l + (r - l) / 2;
-
-        mergeSort(arr, l, m);
-        mergeSort(arr, m + 1, r);
-        merge(arr, l, m, r);
+void mergeSort(int arr[], int low, int high) {
+    if (low < high) {
+        int mid = low + (high - low) / 2;
+        mergeSort(arr, low, mid);
+        mergeSort(arr, mid + 1, high);
+        merge(arr, low, mid, high);
     }
 }
 
-// Dynamic Range Sort (For real-time insertion)
-void dynamicRangeSort(int arr[], int n) {
-    int ranges[100][100] = {0}; // 100 ranges for example
+// Hybrid Sort Function (Fluid Sorting)
+void hybridSort(int arr[], int low, int high) {
+    // Switch to Insertion Sort for small subarrays
+    if (high - low < 10) {
+        insertionSort(arr, low, high);
+        return;
+    }
+
+    // Quick Sort for larger arrays
+    if (high - low > 1000) {
+        quickSort(arr, low, high);
+        return;
+    }
+
+    // Merge Sort for larger subarrays (optimal for large but stable data)
+    mergeSort(arr, low, high);
+}
+
+// Timing function to measure sort performance
+void measureSortingTime(void (*sortFunction)(int[], int, int), int arr[], int low, int high) {
+    clock_t start_time = clock();
+    sortFunction(arr, low, high);
+    clock_t end_time = clock();
     
-    // For each number, place it in its corresponding range
-    for (int i = 0; i < n; i++) {
-        int rangeIndex = arr[i] / 100;  // Divide into ranges (1-100, 101-200, etc.)
-        ranges[rangeIndex][arr[i] % 100]++; // Increment occurrence
-    }
-
-    // Rebuild the array with sorted values from ranges
-    int idx = 0;
-    for (int i = 0; i < 100; i++) {
-        for (int j = 0; j < 100; j++) {
-            while (ranges[i][j]--) {
-                arr[idx++] = i * 100 + j;
-            }
-        }
-    }
-}
-
-// Adaptive Hybrid Sort
-void hybridSort(int arr[], int n) {
-    if (n < 1000) {
-        radixSort(arr, n);  // Use Radix Sort for smaller range or fixed-size integers
-    } else {
-        // If the range is large or the array size is big, use QuickSort
-        if (n < 10000) {
-            quickSort(arr, 0, n - 1);  // Use Quick Sort for smaller arrays
-        } else {
-            mergeSort(arr, 0, n - 1);  // Use Merge Sort for large arrays
-        }
-    }
+    double time_taken = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    printf("Time taken: %.5f seconds\n", time_taken);
 }
 
 int main() {
-    int n;
-    printf("Enter the number of elements: ");
-    scanf("%d", &n);
+    int n = 10000;  // Example size, you can change for testing
+    
+    // Generating random data for testing
+    int *arr1 = (int *)malloc(n * sizeof(int));
+    int *arr2 = (int *)malloc(n * sizeof(int));
 
-    int *arr = (int *)malloc(n * sizeof(int));
-    printf("Enter %d numbers (including large positives/negatives): ", n);
-    for (int i = 0; i < n; i++)
-        scanf("%d", &arr[i]);
+    for (int i = 0; i < n; i++) {
+        arr1[i] = rand() % 10000;  // Random numbers between 0 and 10000
+        arr2[i] = arr1[i];  // Copy for second sorting method
+    }
 
-    hybridSort(arr, n);  // Use the hybrid sorting approach
+    // Measure Fluid Hybrid Sort Time
+    printf("Hybrid Sort:\n");
+    measureSortingTime(hybridSort, arr1, 0, n - 1);
 
-    printf("Sorted array: ");
-    for (int i = 0; i < n; i++)
-        printf("%d ", arr[i]);
-    printf("\n");
+    // Measure Quick Sort Time
+    printf("Quick Sort:\n");
+    measureSortingTime(quickSort, arr2, 0, n - 1);
 
-    free(arr);  // Free allocated memory
+    free(arr1);
+    free(arr2);
+
     return 0;
 }
